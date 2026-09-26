@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.so
+*.o
+build/
+.venv/
+config.local.toml
