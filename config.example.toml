@@ -1,0 +1,36 @@
+# Copy this file outside the source directory and replace the resource paths.
+# Relative paths are resolved from the configuration file's directory.
+[paths]
+cache = "../specter-work/cache"
+output = "../specter-work/results"
+
+[environment]
+python = "3.11.13"
+venv = "../specter-env"
+wheelhouse = "../specter-assets/wheels"
+
+[models.dsv2lite]
+target = "../specter-assets/models/DeepSeek-V2-Lite-customized"
+draft = "../specter-assets/models/DeepSeek-V2-Lite-GPTQ-Int4-onlynormalexpert"
+
+[models.qwen2moe]
+target = "../specter-assets/models/Qwen1.5-MoE-A2.7B-Chat-customized"
+draft = "../specter-assets/models/Qwen1.5-MoE-A2.7B-Chat-GPTQ-Int4-custom-fused-onlynormalexpert"
+
+[models.phimoe]
+target = "../specter-assets/models/Phi-3.5-MoE-instruct-customized"
+draft = "../specter-assets/models/Phi-3.5-MoE-instruct-GPTQ-Int4-fused-onlyexperts"
+
+[datasets]
+GK = "../specter-assets/datasets/gsm8k_prepared"
+WT = "../specter-assets/datasets/wikitext-2-v1_prepared"
+HE = "../specter-assets/datasets/humaneval_prepared"
+GP = "../specter-assets/datasets/gpqa/gpqa_main.csv"
+C4 = "../specter-assets/datasets/c4/c4_prefixes.json"
+
+[runtime]
+# Node IDs are used only with the optional --check-numa flag.
+# They do not bind the process. Use numactl explicitly when desired.
+cpu_node = 0
+memory_node = 0
+threads = 8

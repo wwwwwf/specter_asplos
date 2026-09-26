@@ -1,0 +1,119 @@
+{
+  "version": "1.1",
+  "strategy": "greedy",
+  "output_tokens": 128,
+  "prefix_max_tokens": 16,
+  "inputs_per_dataset": 5,
+  "repeats": 3,
+  "datasets": [
+    "GK",
+    "WT",
+    "HE",
+    "GP",
+    "C4"
+  ],
+  "workload_basis": "25 inputs, three repeats; historical input selection is not fully recovered.",
+  "decoding_implementation": "Current corrected greedy argmax; existing native-precision normalization retained.",
+  "primary_metric": "(last_commit_ms-first_commit_ms)/(N-1)",
+  "additional_metrics": [
+    "post_first_batch_ms_per_token",
+    "ttft_ms",
+    "e2e_ms_per_token"
+  ],
+  "cache_reset": "initial resident set and LRU restored before each input outside measurement",
+  "numerical_determinism": "Native precision; target checks are recorded. Use --require-greedy-match to enforce equality.",
+  "hardware": "NVIDIA A100 40GB; sequential cases; optional host placement check via --check-numa",
+  "default_case": "ds_high",
+  "supporting_sweeps": {
+    "scope": "Reduced supporting experiments; not a reconstruction of every historical paper sweep.",
+    "dataset": "GK",
+    "inputs": 3,
+    "selection": "First three configured GK inputs; depth reuses main/inputs.json when available.",
+    "repeats": 3,
+    "output_tokens": 128,
+    "model": "dsv2lite",
+    "offload_per_layer": 48,
+    "depth": {
+      "candidates": [2, 4, 6, 8, 12, 16, 20, 24, 32],
+      "prefix_max_tokens": 16,
+      "expected_records": 81
+    },
+    "prefix": {
+      "prefix_max_tokens": [8, 16, 32],
+      "gamma": 16,
+      "expected_records_per_prefix": 9,
+      "expected_records_total": 27
+    }
+  },
+  "reference_budget_is_enforced_process_cap": false,
+  "ds_low_selection": "Resident=8; the historical low-budget configuration remains unconfirmed.",
+  "cases": {
+    "ds_high": {
+      "status": "ready",
+      "role": "main",
+      "model": "dsv2lite",
+      "tier": "high",
+      "reference_budget_gb": 24,
+      "gamma": 16,
+      "resident_per_layer": 16,
+      "offload_per_layer": 48,
+      "buffer_size": 32
+    },
+    "ds_low8": {
+      "status": "ready",
+      "role": "main",
+      "model": "dsv2lite",
+      "tier": "low",
+      "reference_budget_gb": 18,
+      "gamma": 16,
+      "resident_per_layer": 8,
+      "offload_per_layer": 56,
+      "buffer_size": 32,
+      "original_paper_configuration_confirmed": false
+    },
+    "qwen_high": {
+      "status": "ready",
+      "role": "main",
+      "model": "qwen2moe",
+      "tier": "high",
+      "reference_budget_gb": 20,
+      "gamma": 8,
+      "resident_per_layer": 15,
+      "offload_per_layer": 45,
+      "buffer_size": 32
+    },
+    "qwen_low": {
+      "status": "ready",
+      "role": "main",
+      "model": "qwen2moe",
+      "tier": "low",
+      "reference_budget_gb": 16,
+      "gamma": 8,
+      "resident_per_layer": 8,
+      "offload_per_layer": 52,
+      "buffer_size": 32
+    },
+    "phi_high": {
+      "status": "ready",
+      "role": "main",
+      "model": "phimoe",
+      "tier": "high",
+      "reference_budget_gb": 40,
+      "gamma": 16,
+      "resident_per_layer": 2,
+      "offload_per_layer": 14,
+      "buffer_size": 0
+    },
+    "phi_low": {
+      "status": "ready",
+      "role": "main",
+      "model": "phimoe",
+      "tier": "low",
+      "reference_budget_gb": 32,
+      "gamma": 16,
+      "resident_per_layer": 1,
+      "offload_per_layer": 15,
+      "buffer_size": 0
+    }
+  }
+}
