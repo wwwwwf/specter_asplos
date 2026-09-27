@@ -6,43 +6,227 @@ batch size one. See [Design](docs/design.md) for the modules and mechanisms.
 
 ## Setup
 
-Use Linux, Python 3.11.13, a CUDA-capable driver, CUDA Toolkit, a C++ compiler,
-and `uv`. `numactl` is optional. The validated environment uses Torch 2.7.0 with CUDA runtime
-12.6 and CUDA Toolkit 12.8. Custom GPTQModel, Transformers, FlashAttention, and
-vLLM wheels are required; upstream wheels with matching version numbers are
-not interchangeable with these builds. Provision those wheels, the target
-and draft checkpoints, and the benchmark datasets separately.
+For AE, use the source archive from Zenodo downloaded below. Run the installation
+and experiment commands from its extracted `$SPECTER_WORK/specter` directory,
+which includes the validated installer, resource checks, and matching configuration.
 
-From the repository root:
+Use Linux x86_64, an NVIDIA A100 40 GB, a CUDA-capable driver, CUDA Toolkit,
+a C++ compiler, `curl`, `tar`, and `unzip`. The validated environment uses
+Python 3.11.13, Torch 2.7.0 with CUDA runtime 12.6, and CUDA Toolkit 12.8.
+`numactl` is optional. Allow about 200 GB of free disk space for downloaded
+archives, extracted checkpoints, the environment, and caches.
+
+### Download and extract
+
+The [Zenodo record](https://doi.org/10.5281/zenodo.22937478) supplies:
+
+| File | Contents |
+| --- | --- |
+| `specter-ae-v1.tar.gz` | Source code, download helper, model manifest, and setup guide. |
+| `specter-ae-wheels.tar.gz` | The four validated dependency wheels and their licenses. |
+| `specter-ae-datasets.tar.gz` | Prepared GK, WT, HE, GP, and C4 inputs. |
+| `specter-ae-v1.manifest.json`, `SHA256SUMS` | File inventory and integrity checks. |
+
+The two DeepSeek checkpoint archives are hosted as numbered parts in the
+[GitHub model release](https://github.com/wwwwwf/specter_asplos/releases/tag/ae-models-20260927).
+`initialization/model-assets.json` records their URLs, ordered parts, sizes,
+and SHA-256 hashes. The download helper uses the Python standard library with
+`curl`; system Python 3.8 or newer is sufficient. The release is public and
+requires no GitHub login. The isolated inference environment is installed
+later with uv.
+
+Choose a new working directory on a filesystem with sufficient free space.
+Replace `/path/to/specter-work` below with that directory:
 
 ```bash
-cp config.example.toml ../specter.local.toml
-# Edit the copied configuration to point to your local assets and output directories.
-uv run --python 3.11 --no-project environment/install.py --config ../specter.local.toml
-uv run --python 3.11 --no-project environment/install.py --config ../specter.local.toml --check
+export SPECTER_WORK=/path/to/specter-work
+mkdir -p "$SPECTER_WORK/downloads"
+cd "$SPECTER_WORK/downloads"
+
+for file in specter-ae-v1.tar.gz specter-ae-wheels.tar.gz \
+  specter-ae-datasets.tar.gz specter-ae-v1.manifest.json SHA256SUMS; do
+  curl --fail --location --retry 3 \
+    "https://zenodo.org/api/records/22937478/files/${file}/content" \
+    --output "$file" || break
+done
+
+sha256sum --ignore-missing -c SHA256SUMS
 ```
 
-The configuration defines model and dataset paths, cache and output directories,
-the environment's Python version, virtual environment, and wheelhouse, and
-CPU thread count and optional NUMA checks. Relative configuration paths resolve from the
-configuration file's parent directory. Keep the local configuration and all
-assets outside this repository.
-
-Activate the virtual environment selected by `environment.venv`, then build
-the local kernels:
+This initial check must report four `OK` entries: the three downloaded archives
+and the manifest. It skips the two model archives, which are downloaded next.
+Continue after all four checks report `OK`. Extract the source package first:
 
 ```bash
-source /path/to/specter-env/bin/activate
-export SPECTER_CONFIG=../specter.local.toml
+cd "$SPECTER_WORK"
+tar -xzf downloads/specter-ae-v1.tar.gz
+cd "$SPECTER_WORK/specter"
+```
+
+Download and reconstruct the two checkpoint archives with:
+
+```bash
+python3 -B initialization/download_models.py \
+  --manifest initialization/model-assets.json \
+  --output "$SPECTER_WORK/downloads" \
+  --source-root "$SPECTER_WORK/specter"
+```
+
+Rerun the same command to resume interrupted parts. Each part is checked before
+use, and each reconstructed archive is checked before receiving its final
+filename. Downloads remain outside the source tree. Verified parts are retained
+under `downloads/.specter-parts/`; parts plus reconstructed model archives use
+about 68 GB before extraction. `--only target` or `--only draft` selects one model.
+
+After both model archives have been verified, check all files together:
+
+```bash
+cd "$SPECTER_WORK/downloads"
+sha256sum -c SHA256SUMS
+```
+
+Continue after all six checks report `OK`, then extract the four asset archives:
+
+```bash
+cd "$SPECTER_WORK"
+for file in specter-ae-wheels.tar.gz specter-ae-datasets.tar.gz \
+  specter-ae-dsv2-target.tar.gz specter-ae-dsv2-draft.tar.gz; do
+  tar -xzf "downloads/$file" || break
+done
+unzip -n -P deserted-untie-orchid \
+  specter-assets/datasets/gpqa/gpqa_main.csv.zip \
+  -d specter-assets/datasets/gpqa/
+cp -n specter/config.example.toml specter.local.toml
+export SPECTER_CONFIG="$SPECTER_WORK/specter.local.toml"
+cd "$SPECTER_WORK/specter"
+```
+
+GPQA uses the [upstream password-protected distribution convention](https://github.com/idavidrein/gpqa).
+Keep its canary and accompanying notices. Dataset/model licenses and source
+attribution are included with the asset archives. The target stores the
+prepared source tensors and is loaded as FP16 by Specter; the draft quantizes
+routed experts to GPTQ INT4, group size 128. The supplied checkpoints already
+have the required layout and quantization. They cover all three selected
+experiments below; Qwen/Phi checkpoints for optional experiments are not bundled.
+
+The extracted layout is:
+
+```text
+$SPECTER_WORK/
+  specter/                 # Source extracted from Zenodo
+  specter-assets/
+    wheels/                # Four validated wheels
+    models/                # DeepSeek target and INT4 draft
+    datasets/              # Five prepared datasets
+  specter.local.toml       # External configuration copied from the source package
+```
+
+The copied configuration points to these actual model and dataset directories;
+no example paths need replacing for the supplied assets. It also places `env/`,
+`cache/`, and `results/` under `$SPECTER_WORK`. To use existing assets, edit their
+paths in this external configuration. Relative paths resolve from the
+configuration file's directory, not from the shell's current directory.
+
+### Install the environment
+
+Use the four builds supplied in `specter-ae-wheels.tar.gz`:
+
+| Package | Bundled version |
+| --- | --- |
+| GPTQModel | `4.0.0.dev0` |
+| Transformers | `4.53.3` |
+| FlashAttention | `2.8.1` |
+| vLLM | `0.9.2` |
+
+These are the validated builds, including the custom GPTQModel adaptations.
+Upstream wheels with matching version numbers are not interchangeable.
+The installer checks their exact SHA-256 hashes against the bundled
+`environment/wheels.sha256`; the default wheelhouse is `specter-assets/wheels/`.
+
+Install the validated uv version in your user directory; no `sudo` is needed:
+
+```bash
+set -o pipefail
+curl -LsSf https://astral.sh/uv/0.12.19/install.sh | \
+  env UV_INSTALL_DIR="$HOME/.local/bin" sh
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+
+export UV_CACHE_DIR="$SPECTER_WORK/cache/uv"
+export UV_PYTHON_INSTALL_DIR="$SPECTER_WORK/cache/python"
+export TMPDIR="$SPECTER_WORK/cache/tmp"
+mkdir -p "$UV_CACHE_DIR" "$UV_PYTHON_INSTALL_DIR" "$TMPDIR" "$SPECTER_WORK/logs"
+
+uv run --python 3.11.13 --no-project environment/install.py \
+  --config "$SPECTER_CONFIG" --check
+```
+
+The cache variables above place package downloads, managed Python, and temporary
+build files on the chosen work filesystem. Keep them exported before the first
+`uv run` to avoid filling the home filesystem or `/tmp` during installation.
+
+The check prints the resolved environment/cache paths, verifies the four wheel
+checksums, and checks available disk space. It does not install packages or
+validate GPU execution. Confirm that the paths are on the intended filesystem,
+then install:
+
+```bash
+uv run --python 3.11.13 --no-project environment/install.py \
+  --config "$SPECTER_CONFIG" 2>&1 | tee "$SPECTER_WORK/logs/install.log"
+source "$SPECTER_WORK/env/bin/activate"
+```
+
+Successful installation ends with `Specter environment is ready.` The installer
+uses 194 pinned runtime dependencies; the 190 packages outside the wheel bundle
+require an online package index. If you changed `environment.venv`, activate
+that directory instead of `env/`.
+
+FlashInfer is pinned to `flashinfer-python==0.2.11.post3`. The installer also
+passes `environment/build-constraints.txt` to uv for its isolated build:
+
+```text
+torch==2.7.0
+setuptools==78.1.1
+wheel==0.45.1
+packaging==25.0
+ninja==1.11.1.4
+numpy==2.2.6
+```
+
+These constraints keep the build on the validated dependency versions instead
+of resolving a newer Torch/CUDA stack independently of the runtime lock.
+
+### Validate resources, build kernels, and test
+
+Run the resource check before loading any model:
+
+```bash
+python -B -m configuration.check --config "$SPECTER_CONFIG"
+```
+
+It checks the selected checkpoint directories and referenced weight files, and
+reads five nonempty inputs from each dataset. Missing paths and invalid data
+are reported with their dataset name and resolved path. The main TPOT entry
+also validates its inputs before model initialization. `--dry-run` on experiment
+entries only prints the execution plan; it is not a resource check.
+
+Set `CUDA_HOME` to your installed toolkit location and select an A100:
+
+```bash
 export CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0
 export CUDA_HOME=/usr/local/cuda TORCH_CUDA_ARCH_LIST=8.0 MAX_JOBS=2
 export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
-python -B -m streamlined_execution_engine.kernels.build
-python -B -m pytest -p no:cacheprovider tests -q
+export SPECTER_BUILD_VERBOSE=1
+python -B -m streamlined_execution_engine.kernels.build \
+  2>&1 | tee "$SPECTER_WORK/logs/build.log"
+python -B -m pytest -p no:cacheprovider tests -q \
+  2>&1 | tee "$SPECTER_WORK/logs/tests.log"
 ```
 
-Set `CUDA_HOME` to the installed toolkit location. Pass `--config` to each
-entry point, or set `SPECTER_CONFIG` once to the local configuration path.
+Build success prints the local `specter_cuda.so` path. Continue after the tests
+pass. Build/test entry points apply the cache locations from `SPECTER_CONFIG`
+before importing runtime libraries. Keep that variable exported when starting
+an experiment, or pass `--config` explicitly.
 
 ## Default experiment
 
