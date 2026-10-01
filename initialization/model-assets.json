@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "archives": [
+    {
+      "name": "specter-ae-dsv2-draft.tar.gz",
+      "size_bytes": 8662667293,
+      "sha256": "a6f217f04197ed931cc0fa7833cdad8d091c528a8687112598d87d7bea169e29",
+      "parts": [
+        {
+          "name": "specter-ae-dsv2-draft.tar.gz.part0001",
+          "size_bytes": 1900000000,
+          "sha256": "54b80064d5a8342e06684432aba532f9343182f05281f76178397bcc34e6a57e",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-draft.tar.gz.part0001"
+        },
+        {
+          "name": "specter-ae-dsv2-draft.tar.gz.part0002",
+          "size_bytes": 1900000000,
+          "sha256": "3400fad8b4c879b8605b19bfc515be9271fd7f6f12f0ba297d78e07ef4031d30",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-draft.tar.gz.part0002"
+        },
+        {
+          "name": "specter-ae-dsv2-draft.tar.gz.part0003",
+          "size_bytes": 1900000000,
+          "sha256": "37d8a2af41dfee24a10beb0b5d96f2182a8528e1f60847be7d71a228b90f05fc",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-draft.tar.gz.part0003"
+        },
+        {
+          "name": "specter-ae-dsv2-draft.tar.gz.part0004",
+          "size_bytes": 1900000000,
+          "sha256": "ed3e00a35a1bfae1260ee8fa5af05710603a871247acbb9cabedba21e6b86417",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-draft.tar.gz.part0004"
+        },
+        {
+          "name": "specter-ae-dsv2-draft.tar.gz.part0005",
+          "size_bytes": 1062667293,
+          "sha256": "37706b87a4750097609b85b6dbdc426ac51a0ab699b162383a18596d93d9c44c",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-draft.tar.gz.part0005"
+        }
+      ]
+    },
+    {
+      "name": "specter-ae-dsv2-target.tar.gz",
+      "size_bytes": 25215887043,
+      "sha256": "2c9b2409d1e913a141009da4fa0e6705c2d61432f326d2aac454f30d92f98dbc",
+      "parts": [
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0001",
+          "size_bytes": 1900000000,
+          "sha256": "2123f05e14b7450dda00ea88799e836c9dc0de85f22be533a584e5105801bc42",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0001"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0002",
+          "size_bytes": 1900000000,
+          "sha256": "1b511cd74ce7c76af8c9fd56647bca0e4a77208060fdb6239da367638e6f5ee8",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0002"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0003",
+          "size_bytes": 1900000000,
+          "sha256": "3edbe1469613d9fd09995edf47d0b415456375fd80414ceff265174aceac79ea",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0003"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0004",
+          "size_bytes": 1900000000,
+          "sha256": "a655d2fc143ad5cf72737f02e11bf892b9f50bcc0a570089b2c2acb16e1bbac4",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0004"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0005",
+          "size_bytes": 1900000000,
+          "sha256": "6ce3655fb95a30dd64598e8a3693e81d5d95e00d637e33c1529abbe01ff88574",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0005"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0006",
+          "size_bytes": 1900000000,
+          "sha256": "a56630838c58dbe6e4c9a9d7486ef13acf6a9dafe9a5557f2a31d8b58fc4e59c",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0006"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0007",
+          "size_bytes": 1900000000,
+          "sha256": "db156105c3d08706315abb3a616ea9b1fe3f9d329ccf9d0be559323d8f661752",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0007"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0008",
+          "size_bytes": 1900000000,
+          "sha256": "6278c7ad4be1e6bc30712ede22156253dd38a0505a9002f0f08ca033321ef6f6",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0008"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0009",
+          "size_bytes": 1900000000,
+          "sha256": "0e79a678ffb9d49ecdf432f5fd43a7c4a46922a9228d92b6b3f07ed82c2bcc33",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0009"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0010",
+          "size_bytes": 1900000000,
+          "sha256": "d2af4c1a36fdf2c0fbdbf1c5c6f79170c1caecf245b43a82338a810877843bcb",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0010"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0011",
+          "size_bytes": 1900000000,
+          "sha256": "0152dbd089bc97355d98a68f2d0e97da2bf49c47e798384001f8dd9116f5a8f1",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0011"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0012",
+          "size_bytes": 1900000000,
+          "sha256": "87f6a51c97724c14039bae2e61f7bd7a55e634c2f5a9b281bcb66ed34ad48152",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0012"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0013",
+          "size_bytes": 1900000000,
+          "sha256": "919c7b6d47a19d9649dd1d58f94e42fc0a9dbe2ebdd38313133ae6f1de561349",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0013"
+        },
+        {
+          "name": "specter-ae-dsv2-target.tar.gz.part0014",
+          "size_bytes": 515887043,
+          "sha256": "99e4e87ee01a7ff0fb35a4717fc46cee2ff5569b5a6b1d651825b69c6b6b6dd9",
+          "url": "https://github.com/wwwwwf/specter_asplos/releases/download/ae-models-20260927/specter-ae-dsv2-target.tar.gz.part0014"
+        }
+      ]
+    }
+  ]
+}

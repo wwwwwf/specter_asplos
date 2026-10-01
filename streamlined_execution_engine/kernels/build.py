@@ -5,12 +5,13 @@ from pathlib import Path
 
 @lru_cache(None)
 def load_extension():
+    from configuration import configure, external_path
+    config = configure()
     os.environ.setdefault('CUDA_HOME', '/usr/local/cuda')
     from torch.utils.cpp_extension import load
     root = Path(__file__).resolve().parent
     v = root / 'csrc/vllm'
-    from configuration import get_config, external_path
-    build = external_path(get_config().cache_dir / 'kernels' / 'specter_cuda')
+    build = external_path(config.cache_dir / 'kernels' / 'specter_cuda')
     build.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault('TORCH_CUDA_ARCH_LIST', '8.0')
     os.environ.setdefault('MAX_JOBS', '2')

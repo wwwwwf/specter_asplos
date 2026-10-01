@@ -1,0 +1,67 @@
+{
+  "commit": "ce545188b804238f0b23a59fc45e6a8f8b390c40",
+  "upstream": "https://github.com/dvmazur/mixtral-offloading",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "c7e0815283bc902f83b0eb0422b70baa61bcedb1d1ec8dbde4aec659974bd357",
+      "git_blob": "d91fad56c338d315207feecc496d5fddaedf9ccb",
+      "bytes": 1084
+    },
+    {
+      "path": "README.md",
+      "sha256": "fc047d9cfa027330ea6f4e037e57b47589cb08ed22421503021aa5658eb6059b",
+      "git_blob": "a380f200abf13a3b35537de9cac123f4b6359d64",
+      "bytes": 1580
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "edc5cfec25c647c762d6753773fcff232d63bc4509a188983f4a2b80f71b12c0",
+      "git_blob": "d6977f9ad822ae63311f077af4e2460b39c7fef9",
+      "bytes": 142
+    },
+    {
+      "path": "src/build_model.py",
+      "sha256": "5b8f46c2ffddd1040e58e019ab91fd305e14b044196185ba2b3683d7a952b587",
+      "git_blob": "12bfa0c6e37bdbf4964f8776e4d2132bf49a32ef",
+      "bytes": 7502
+    },
+    {
+      "path": "src/custom_layers.py",
+      "sha256": "d2ba9efcd75ff36fa4125863db8b832d6ad26b6dd023ee82b8ffed7f5a725382",
+      "git_blob": "a20b6eeee3c6200f8d307e6bdd034e05256feb15",
+      "bytes": 12269
+    },
+    {
+      "path": "src/expert_cache.py",
+      "sha256": "b36aba1627391765ce33a2dd6aecc3ce755b4ccce0f528cdcedd6fadb8ed4141",
+      "git_blob": "00bfd189363bb265d0fd90b2bdf4058499816992",
+      "bytes": 10399
+    },
+    {
+      "path": "src/expert_wrapper.py",
+      "sha256": "78853ab2c086d6db693e420962b52a3acd0b9dbea860ca2871a08bee3457e093",
+      "git_blob": "4e6a8ec6b50e869741cd154e9525fa5ad924bee5",
+      "bytes": 2825
+    },
+    {
+      "path": "src/packing.py",
+      "sha256": "03f6dd07e36482fe1d61e3d8494560070d264f9b90d48ada0b1b4c0e238e2713",
+      "git_blob": "d3490859368c444fbacf1c5032c6dd6d6fb816ed",
+      "bytes": 3413
+    },
+    {
+      "path": "src/triton_kernels.py",
+      "sha256": "1caee8722173dec901214bf56fc15797ae146c1cc458c4ecbc24db9aa128aa87",
+      "git_blob": "e0b3ce962440d2c7fded36deb39919be43a91b26",
+      "bytes": 22349
+    },
+    {
+      "path": "src/utils.py",
+      "sha256": "7cfc912ceaea89750934f622fb91da2f7bc0473aac0979abe32e1dd564d1eb6e",
+      "git_blob": "d5e01db4b087d72d338f51842abba3078520be6b",
+      "bytes": 2883
+    }
+  ],
+  "vendoring_note": "Exact git blobs from the pinned commit; upstream working-tree edits excluded. No upstream source modifications."
+}

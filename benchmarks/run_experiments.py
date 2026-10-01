@@ -53,6 +53,39 @@ def append_json(path, data):
         stream.write(json.dumps(data, allow_nan=False) + '\n')
 
 
+def load_candidate_prompts(config, args, cases):
+    """Validate candidate pools before importing models or creating results."""
+    from configuration import external_path
+    from data.loader import prepare_data
+
+    raw_prompts = {}
+    for dataset in dict.fromkeys(case.dataset for case in cases):
+        if dataset == 'CUSTOM':
+            path = external_path(args.prompts_json)
+            context = f"Dataset 'CUSTOM' at {path}"
+            try:
+                prompts = json.loads(path.read_text(encoding='utf-8'))
+                if not isinstance(prompts, list) or not all(isinstance(item, str) for item in prompts):
+                    raise ValueError('prompts-json must contain an array of strings')
+                if not any(prompt.strip() for prompt in prompts):
+                    raise ValueError('Need at least 1 nonempty prompt; found 0')
+            except FileNotFoundError as error:
+                raise FileNotFoundError(f'{context}: {error}') from error
+            except (OSError, ValueError) as error:
+                raise ValueError(f'{context}: {error}') from error
+        else:
+            path = config.path('datasets', dataset)
+            prompts = prepare_data(path,
+                                   max(args.num_data * 8, 1024),
+                                   dataset_name=dataset, allow_fewer=True)
+        available = sum(bool(prompt.strip()) for prompt in prompts)
+        if available < args.num_data:
+            raise ValueError(f"Dataset {dataset!r} at {path}: Need {args.num_data} "
+                             f'nonempty prompts; found {available}')
+        raw_prompts[dataset] = prompts
+    return raw_prompts
+
+
 def summarize(records, expected, output):
     rows = []
     for label in dict.fromkeys(record['case']['label'] for record in records):
@@ -254,7 +287,7 @@ def main(argv=None):
         cases = build_cases(args)
     except ValueError as error:
         parser.error(str(error))
-    from configuration import configure, external_path
+    from configuration import configure
     config = configure(args.config)
     output = config.output_path(args.output, f'experiments/{args.experiment}/{args.model}')
     plan = {'experiment': args.experiment, 'model': args.model,
@@ -268,8 +301,7 @@ def main(argv=None):
         return
     if output.exists():
         raise FileExistsError(f'Use a fresh output path: {output}')
-    if args.prompts_json:
-        external_path(args.prompts_json)
+    raw_prompts = load_candidate_prompts(config, args, cases)
     from benchmarks.numa import check_numa, probe_numa
     if args.check_numa:
         check_numa(config.values.get('runtime', {}))
@@ -279,7 +311,6 @@ def main(argv=None):
     from speculative_inference_controller.model_init import HybridPrecisionModelInitializer
     from benchmarks.cache_reset import ResidentReset
     from benchmarks.run_tpot import controller_for
-    from data.loader import prepare_data
     torch.cuda.set_device(0)
     if 'A100' not in torch.cuda.get_device_name():
         raise RuntimeError('Select an A100 using CUDA_DEVICE_ORDER=PCI_BUS_ID and CUDA_VISIBLE_DEVICES')
@@ -294,15 +325,6 @@ def main(argv=None):
                 'source_sha256': {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
                                   for path in source_root.rglob('*.py') if '__pycache__' not in path.parts}}
     write_json(output / 'config.json', metadata)
-    raw_prompts = {}
-    for dataset in dict.fromkeys(case.dataset for case in cases):
-        if dataset == 'CUSTOM':
-            prompts = json.loads(Path(args.prompts_json).read_text(encoding='utf-8'))
-            if not isinstance(prompts, list) or not all(isinstance(item, str) for item in prompts):
-                raise ValueError('prompts-json must contain an array of strings')
-        else:
-            prompts = prepare_data(str(config.path('datasets', dataset)), max(args.num_data * 8, 1024))
-        raw_prompts[dataset] = prompts
     records, inputs = [], {}
     base_case = model_cases(config)[args.model]
     print(f'Output: {output}; planned measurements: {plan["expected_records"]}', flush=True)

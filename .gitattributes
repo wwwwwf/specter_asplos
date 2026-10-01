@@ -1,0 +1,5 @@
+# Preserve the bytes recorded in the bundled source provenance manifests.
+baselines/mixtral_offloading/upstream/** -text
+baselines/mixtral_offloading/legacy_dispatch.py -text
+baselines/mixtral_offloading/LICENSE -text
+baselines/specmoeoff/LICENSE.mixtral-offloading -text

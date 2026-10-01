@@ -106,8 +106,8 @@ Keep its canary and accompanying notices. Dataset/model licenses and source
 attribution are included with the asset archives. The target stores the
 prepared source tensors and is loaded as FP16 by Specter; the draft quantizes
 routed experts to GPTQ INT4, group size 128. The supplied checkpoints already
-have the required layout and quantization. They cover all three selected
-experiments below; Qwen/Phi checkpoints for optional experiments are not bundled.
+have the required layout and quantization. They cover the DeepSeek experiments below, including both baseline comparisons;
+Qwen/Phi checkpoints are not bundled.
 
 The extracted layout is:
 
@@ -219,7 +219,7 @@ export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
 export SPECTER_BUILD_VERBOSE=1
 python -B -m streamlined_execution_engine.kernels.build \
   2>&1 | tee "$SPECTER_WORK/logs/build.log"
-python -B -m pytest -p no:cacheprovider tests -q \
+python -B -m pytest -p no:cacheprovider tests baselines -q \
   2>&1 | tee "$SPECTER_WORK/logs/tests.log"
 ```
 
@@ -227,6 +227,43 @@ Build success prints the local `specter_cuda.so` path. Continue after the tests
 pass. Build/test entry points apply the cache locations from `SPECTER_CONFIG`
 before importing runtime libraries. Keep that variable exported when starting
 an experiment, or pass `--config` explicitly.
+
+## Update an existing AE installation
+
+Update the source files in the existing `specter/` directory. Reuse the
+installed environment, `specter.local.toml`, prepared datasets, and DeepSeek
+checkpoints. The existing `main`, `depth`, `prefix`, and `all` commands keep
+their workloads and parameters.
+
+From that directory with the existing environment active and `SPECTER_CONFIG`
+set, prepare an external log directory once:
+
+```bash
+mkdir -p "$SPECTER_WORK/logs"
+set -o pipefail
+export PYTHONUNBUFFERED=1
+```
+
+Run each check independently:
+
+```bash
+# Low-memory Specter (4 resident experts per MoE layer)
+python -B -m benchmarks.run_ae --experiment main --memory low --output ae_low \
+  2>&1 | tee "$SPECTER_WORK/logs/ae_low.log"
+
+# Routing-prediction sensitivity
+python -B -m benchmarks.run_ae --experiment sensitivity --output ae_sensitivity \
+  2>&1 | tee "$SPECTER_WORK/logs/ae_sensitivity.log"
+
+# DeepSeek speedup comparison in both memory settings
+python -B -m benchmarks.run_ae --experiment speedup --memory both --output ae_compare \
+  2>&1 | tee "$SPECTER_WORK/logs/ae_compare.log"
+```
+
+The first two commands produce raw records and `summary.json`; the comparison
+produces `comparison.json` and `comparison.csv` for each memory setting.
+Results are under the configured `paths.output`, and complete terminal output
+is retained in the three log files above. Use a fresh output name for a rerun.
 
 ## Default experiment
 
@@ -246,6 +283,23 @@ contain TPOT summaries. Configuration, inputs, warmup, and target output checks
 are saved separately. An existing experiment directory is not overwritten.
 Use `--output ae_run2` for another run.
 
+To run the low-residency configuration, or run both main configurations
+sequentially:
+
+```bash
+python -B -m benchmarks.run_ae --experiment main --memory low
+python -B -m benchmarks.run_ae --experiment main --memory both --output ae_both
+```
+
+These commands use `SPECTER_CONFIG` exported during setup; `--config` is also
+accepted. `--memory high` (the default) uses the `ds_high` protocol with 16
+resident experts per layer; `--memory low` uses `ds_low4` with 4 resident
+experts per layer. Both use K=16 and the same five datasets, five inputs per
+dataset, three repeats, greedy decoding, and 128 output tokens. Results are
+written to `main/` and `main_low/` under the selected output directory (75
+records per configuration). Case settings are recorded in
+`benchmarks/protocol.json`.
+
 Two optional supporting experiments reuse the same DeepSeek checkpoints:
 
 ```bash
@@ -262,6 +316,56 @@ and three repeats per length (27 measurements), writing `ae/prefix_8/`,
 
 Use `--experiment all` with a fresh output directory to run the three experiments
 sequentially. Add `--dry-run` to inspect the commands without loading models.
+Add `--memory both` to include both main configurations; `depth` and `prefix`
+keep their existing workloads. The memory option applies to `main`, `all`, and
+the explicit `speedup` experiment below.
+
+## Speedup comparison
+
+Run DeepSeek-V2-Lite with both baselines in either memory configuration:
+
+```bash
+python -B -m benchmarks.run_ae --experiment speedup --memory high \
+  --config ../specter.local.toml --output ae_speedup_high
+python -B -m benchmarks.run_ae --experiment speedup --memory low \
+  --config ../specter.local.toml --output ae_speedup_low
+```
+
+Use `--memory both --output ae_speedup_both` to run both configurations
+sequentially. The supplied DeepSeek checkpoints and five prepared datasets
+are sufficient; no additional downloads are required.
+
+| Memory setting | Specter residents | SpecMoEOff residents | Mixtral-Offloading residents |
+| --- | ---: | ---: | ---: |
+| High | 16 | 12 | 32 |
+| Low | 4 | 2 | 20 |
+
+Counts are per MoE layer. Specter uses K=16 and SpecMoEOff uses K=3.
+Specter and SpecMoEOff each retain 32 global buffer allocations;
+Mixtral-Offloading uses 4. Both presets use fixed counts without calibration
+and report each method's measured GPU footprint.
+
+Each method uses the same GK, WT, HE, GP, and C4 inputs: five per dataset,
+three repeats, greedy decoding, a 16-token prefix cap, and 128 output tokens
+(75 measurements per method and memory setting). All records contribute to
+the summaries. Speedup is baseline mean decode TPOT divided by Specter mean
+decode TPOT; TTFT and end-to-end latency are reported separately.
+
+For one memory setting, results are written under
+`<output>/speedup/<high|low>/<method>/`, with `comparison.csv` and
+`comparison.json` in `<output>/speedup/`. With `--memory both`, the two
+comparison roots are `<output>/speedup_high/` and `<output>/speedup_low/`.
+The comparison tables include per-dataset TPOT, speedup, output agreement,
+and GPU memory. `[result] current/75` reports progress within each method.
+
+Add `--dry-run` to inspect commands. To reuse matching Specter measurements,
+add `--reference-root /path/to/comparison-root`, containing
+`<high|low>/specter/`; both baselines will run. The inputs, configuration,
+seeds, and runtime environment must match. `--require-greedy-match` additionally
+requires exact checked output agreement. To reuse an earlier `--memory both`
+run, invoke each tier separately with its `speedup_high/` or `speedup_low/`
+comparison root. See [Baseline comparisons](baselines/README.md)
+for backend details and individual-method commands.
 
 ## Output paths and host placement
 
@@ -323,6 +427,10 @@ python -B -m benchmarks.run_experiments --experiment memory \
 python -B -m benchmarks.kernel_bench --tokens 1 16 128 \
   --hidden 2048 --features 1408 --experts 64 --top-k 6 --output ds_projection
 ```
+
+Routing and sensitivity treat 1024 as a candidate-pool limit, not a minimum
+number of prompts. Smaller prepared datasets are accepted; the selected
+inputs must still satisfy the requested sample count and token lengths.
 
 Configuration is read from `SPECTER_CONFIG`, or from an explicit `--config`.
 All entries accept `--dry-run`. Diagnostic runs and clean TPOT runs use the same

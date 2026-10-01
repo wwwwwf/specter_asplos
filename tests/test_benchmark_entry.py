@@ -26,8 +26,8 @@ class BenchmarkEntryTests(unittest.TestCase):
             '[paths]\ncache = "cache"\noutput = "results"\n'
             '[datasets]\nGK = "missing-gsm8k"\n', encoding='utf-8')
 
-    def commands(self, experiment='all', check_numa=False):
-        return run_ae.build_commands(experiment, self.config, self.output, check_numa)
+    def commands(self, experiment='all', check_numa=False, memory='high'):
+        return run_ae.build_commands(experiment, self.config, self.output, check_numa, memory)
 
     def test_entry_defaults_to_main_and_default_command_satisfies_frozen_protocol(self):
         self.assertEqual(run_ae.build_parser().parse_args([]).experiment, 'main')
@@ -43,6 +43,49 @@ class BenchmarkEntryTests(unittest.TestCase):
         self.assertEqual(args.tokens, 128)
         self.assertEqual(args.prefix_tokens, protocol['prefix_max_tokens'])
         self.assertFalse(args.check_numa)
+
+    def test_low_memory_command_satisfies_protocol_and_uses_separate_output(self):
+        label, command = self.commands('main', memory='low')[0]
+        parser = run_tpot.build_parser()
+        args = parser.parse_args(command[4:])
+        _, case = run_tpot.validate_arguments(parser, args)
+        self.assertEqual(label, 'main_low')
+        self.assertEqual(args.output, str(self.output / label))
+        self.assertEqual(args.protocol_case, 'ds_low4')
+        self.assertEqual(case['resident_per_layer'], 4)
+        self.assertEqual(args.offload_per_layer, 60)
+        self.assertEqual(args.gamma, 16)
+        self.assertEqual(len(args.datasets) * args.num_data * args.repeats, 75)
+
+    def test_prior_low8_protocol_remains_available_explicitly(self):
+        _, command = self.commands('main', memory='low')[0]
+        parser = run_tpot.build_parser()
+        args = parser.parse_args(command[4:])
+        args.protocol_case = 'ds_low8'
+        args.offload_per_layer = 56
+        _, case = run_tpot.validate_arguments(parser, args)
+        self.assertEqual(case['resident_per_layer'], 8)
+        self.assertEqual(case['offload_per_layer'], 56)
+
+    def test_both_memory_tiers_keep_identical_workloads_and_supporting_experiments(self):
+        commands = self.commands(memory='both', check_numa=True)
+        self.assertEqual([label for label, _ in commands],
+                         ['main', 'main_low', 'depth', 'prefix_8', 'prefix_16', 'prefix_32'])
+        main_args = []
+        for _, command in commands[:2]:
+            parser = run_tpot.build_parser()
+            args = parser.parse_args(command[4:])
+            run_tpot.validate_arguments(parser, args)
+            main_args.append(vars(args))
+        differing = {key for key in main_args[0] if main_args[0][key] != main_args[1][key]}
+        self.assertEqual(differing, {'protocol_case', 'offload_per_layer', 'output'})
+        self.assertEqual(commands[2:], self.commands(check_numa=True)[1:])
+        self.assertTrue(all('--check-numa' in command for _, command in commands))
+
+    def test_memory_option_rejects_unrelated_experiments(self):
+        for experiment in ('depth', 'prefix', 'routing', 'sensitivity', 'kernel'):
+            with self.subTest(experiment=experiment), self.assertRaisesRegex(ValueError, 'main or all'):
+                self.commands(experiment, memory='low')
 
     def test_supporting_commands_have_81_depth_and_27_prefix_measurements(self):
         commands = self.commands()
@@ -126,6 +169,13 @@ class BenchmarkEntryTests(unittest.TestCase):
         with patch.dict(os.environ), patch.object(run_ae.subprocess, 'run') as child:
             with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(FileExistsError):
                 run_ae.main(['--experiment', 'all', '--config', str(self.config)])
+        child.assert_not_called()
+
+    def test_existing_low_output_stops_both_tiers_before_any_child_process(self):
+        (self.output / 'main_low').mkdir(parents=True)
+        with patch.dict(os.environ), patch.object(run_ae.subprocess, 'run') as child:
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(FileExistsError):
+                run_ae.main(['--memory', 'both', '--config', str(self.config)])
         child.assert_not_called()
 
 

@@ -37,7 +37,7 @@ def controller_for(case, target, device):
 DATASETS = ('GK', 'WT', 'HE', 'GP', 'C4')
 
 
-def run_case(kind, case, tokenizer, draft, target, ids, tokens, seed, strategy, reset):
+def run_case(kind, case, tokenizer, draft, target, ids, tokens, seed, strategy, reset, record_process_memory=False):
     import torch
     from initialization.model_loader import install_hooks
     from speculative_inference_controller.state import spec_inf
@@ -58,6 +58,9 @@ def run_case(kind, case, tokenizer, draft, target, ids, tokens, seed, strategy, 
     torch.cuda.manual_seed_all(seed)
     torch.cuda.synchronize()
     torch.cuda.reset_peak_memory_stats()
+    if record_process_memory:
+        from benchmarks.gpu_memory import memory_snapshot, memory_footprint
+        memory_before = memory_snapshot()
     log = io.StringIO()
     start = time.perf_counter()
     clock.begin()
@@ -87,9 +90,13 @@ def run_case(kind, case, tokenizer, draft, target, ids, tokens, seed, strategy, 
         'digest': hashlib.sha256(json.dumps(capture.ids).encode()).hexdigest(),
         'wall_ms': wall_ms, 'e2e_ms_per_token': wall_ms / tokens,
         'peak_allocated_bytes': torch.cuda.max_memory_allocated(),
+        'peak_reserved_bytes': torch.cuda.max_memory_reserved(),
         'io': manager.get_async_loading_stats(), 'pio': controller.get_prefetch_policy_stats(),
         'log': log.getvalue(), **clock.result(tokens),
     }
+    if record_process_memory:
+        record['gpu_memory'] = memory_footprint(memory_before, memory_snapshot(),
+            record['peak_reserved_bytes'], record['peak_allocated_bytes'])
     for label, pattern in [('accept_total', r'accept_total:(\d+)'), ('sd_rounds', r'step:(\d+)'),
                            ('acceptance_rate', r'acceptance_rate:([0-9.]+)'), ('window_utilization', r'window_utilization:([0-9.]+)')]:
         match = re.search(pattern, record['log'])
@@ -148,6 +155,8 @@ def build_parser():
     parser.add_argument('--skip-greedy-check', action='store_true')
     parser.add_argument('--require-greedy-match', action='store_true',
         help='Stop before performance measurements if Specter differs from target.')
+    parser.add_argument('--record-process-memory', action='store_true',
+        help='Record own-process GPU memory outside timing for baseline budget matching.')
     return parser
 
 
@@ -186,13 +195,14 @@ def main():
     from configuration import configure
     resource_config = configure(args.config)
     args.output = str(resource_config.output_path(args.output, args.protocol_case or args.model))
+    from data.loader import prepare_datasets
+    prepared_prompts = prepare_datasets(resource_config, args.datasets, args.num_data)
     if args.check_numa:
         check_numa(resource_config.values.get('runtime', {}))
     import torch
     from initialization.model_loader import model_cases
     from speculative_inference_controller.model_init import HybridPrecisionModelInitializer
     from benchmarks.cache_reset import ResidentReset
-    from data.loader import prepare_data
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
     torch.cuda.set_device(0)
@@ -241,18 +251,14 @@ def main():
     reset = ResidentReset(manager)
     items = []
     for dataset in args.datasets:
-        path = str(resource_config.path('datasets', dataset))
         # Same main-entry selection: first five nonempty prompts; preserve any
         # short prefix and record its length rather than silently resampling.
-        prompts = prepare_data(path, args.num_data)
-        if len(prompts) != args.num_data:
-            raise ValueError(f'Insufficient prompts in {dataset}')
-        for index, prompt in enumerate(prompts):
+        for index, prompt in enumerate(prepared_prompts[dataset]):
             ids = tokenizer.encode(prompt, return_tensors='pt')[:, :args.prefix_tokens].cuda()
             items.append((dataset, index, prompt, ids))
     (output / 'inputs.json').write_text(json.dumps([{'dataset': d, 'index': i, 'text': p, 'input_ids': ids[0].tolist()} for d, i, p, ids in items], indent=2))
     for kind in ['specter', 'target']:
-        result = run_case(kind, case, tokenizer, draft, target, items[0][3], 64, 42, 'greedy', reset)
+        result = run_case(kind, case, tokenizer, draft, target, items[0][3], 64, 42, 'greedy', reset, args.record_process_memory)
         append(output / 'warmup.jsonl', result)
         print('[warmup]', kind, result['tpot_ms'], flush=True)
     if not args.skip_greedy_check:
@@ -262,7 +268,7 @@ def main():
                 continue
             group = {}
             for kind in ['target', 'specter']:
-                result = run_case(kind, case, tokenizer, draft, target, ids, args.tokens, 42, 'greedy', reset)
+                result = run_case(kind, case, tokenizer, draft, target, ids, args.tokens, 42, 'greedy', reset, args.record_process_memory)
                 result.update(dataset=dataset, prompt_index=index)
                 append(output / 'greedy_checks.jsonl', result)
                 group[kind] = result
@@ -280,7 +286,7 @@ def main():
             order = ['specter']
             seed = 42 + global_index * 1009 + repeat * 100003
             for kind in order:
-                result = run_case(kind, case, tokenizer, draft, target, ids, args.tokens, seed, args.strategy, reset)
+                result = run_case(kind, case, tokenizer, draft, target, ids, args.tokens, seed, args.strategy, reset, args.record_process_memory)
                 result.update(model=case.name, dataset=dataset, prompt_index=index, repeat=repeat, prefix_tokens=ids.shape[1])
                 append(output / 'records.jsonl', result)
                 records.append(result)

@@ -1,0 +1,18 @@
+{
+  "implementation": "author historical DeepSeek Mixtral-Offloading dispatch",
+  "source_commit": "82d75e3ad3d38fe71c86b0dba290d1e0ef9e66f0",
+  "source_path": "src/custom_layers.py",
+  "class_name": "SparseMoeWrapperDeepseekv2",
+  "source_start_line": 361,
+  "source_end_line": 449,
+  "source_file_sha256": "57c5d2a36e2b1768424068d849954bfff3bccd7c7e0afa9ebebdabea8f9b26a3",
+  "class_utf8_lf_sha256": "ea1c1ffa454e0a31700a0e636cca1e35933a8ea1ed5da1b9d22c3634ee7fd87b",
+  "extracted_module_sha256": "3c037e905be2a8f9613a6d76379ca745c33b6e2785515e04ba2787a18176511f",
+  "crosschecked_earlier_commit": "2826896d4c4ab4cb1145cd812612d809c09c4060",
+  "earlier_class_is_byte_identical": true,
+  "modifications": "Only a module docstring and the required time/torch/nn imports are added; class body unchanged.",
+  "named_mixtral_builder_source": "src/build_model_mixtraloffloading.py",
+  "named_mixtral_cache_source": "src/expert_cache_mixtraloffloading.py",
+  "earlier_commit_caveat": "The earlier main.py imports generic build_model/expert_cache with canonical host copies and _load, not the later named Mixtral _swap cache.",
+  "dispatch_contract": "gate(hidden_states) returns selected_experts, routing_weights, aux_loss, router_logits; forward returns output, router_logits; shared_experts required."
+}

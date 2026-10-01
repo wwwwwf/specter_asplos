@@ -1,0 +1,2 @@
+# Preserve the byte-identical upstream Git blobs across Windows/Linux checkouts.
+* -text

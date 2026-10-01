@@ -1,0 +1,7 @@
+# Isolated build dependencies, including FlashInfer's build backend.
+torch==2.7.0
+setuptools==78.1.1
+wheel==0.45.1
+packaging==25.0
+ninja==1.11.1.4
+numpy==2.2.6

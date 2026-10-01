@@ -46,7 +46,7 @@
     }
   },
   "reference_budget_is_enforced_process_cap": false,
-  "ds_low_selection": "Resident=8; the historical low-budget configuration remains unconfirmed.",
+  "ds_low_selection": "Resident=4; ds_low8 remains available as an explicit alternative.",
   "cases": {
     "ds_high": {
       "status": "ready",
@@ -57,6 +57,17 @@
       "gamma": 16,
       "resident_per_layer": 16,
       "offload_per_layer": 48,
+      "buffer_size": 32
+    },
+    "ds_low4": {
+      "status": "ready",
+      "role": "main",
+      "model": "dsv2lite",
+      "tier": "low",
+      "reference_budget_gb": 18,
+      "gamma": 16,
+      "resident_per_layer": 4,
+      "offload_per_layer": 60,
       "buffer_size": 32
     },
     "ds_low8": {
